@@ -15,7 +15,49 @@ requests.
 | POST | `/recompute` | Adjusted body points in → new measurements and BCS (no detection) |
 | GET | `/docs` | Interactive API documentation |
 
-Saving and review endpoints are added in later Stage 3 issues.
+Saved data (needs sign-in, see below):
+
+| Method | Path | What it does |
+|---|---|---|
+| POST | `/animals` | Add an animal |
+| GET | `/animals` | List my animals |
+| GET / PATCH | `/animals/{id}` | Get / update one of my animals |
+| GET | `/animals/{id}/analyses` | History of one animal (newest first) |
+| POST | `/analyses` | Save an analysis (photos only with consent) |
+| GET | `/analyses` | My recent analyses |
+| GET | `/analyses/{id}` | One saved analysis, with temporary photo links |
+
+Review endpoints are added in a later Stage 3 issue.
+
+### Sign-in and saving
+
+Trying `/analyze` and `/recompute` needs **no account**, and nothing is
+stored. To save, the website signs the user in with Supabase and sends their
+access token:
+
+```
+Authorization: Bearer <Supabase access token>
+```
+
+The API makes every database and storage call **with that token**, so the
+security rules in [`supabase/`](../supabase) decide what each user can see.
+The API only needs the project URL and the **publishable** key. It never
+uses the secret/service-role key.
+
+`POST /analyses` is `multipart/form-data`:
+
+| Field | Meaning |
+|---|---|
+| `data` | JSON: `points`, `scales`, `analysis_id`, `rib_visibility` (as for `/recompute`), plus `animal_id`, `photo_consent`, `breed` (from `/analyze`) |
+| `side`, `top`, `back` | Photos. **Stored only when `photo_consent` is true**, re-encoded as JPEG (max 2048 px) so hidden metadata such as GPS location is removed |
+
+- Measurements and BCS are **recomputed on the server** from the points;
+  values sent by the app are ignored.
+- Photos go to the private `animal-photos` bucket as
+  `<user id>/<analysis id>/<view>.jpg`. If saving fails, uploaded photos are
+  removed again.
+- Someone else's animal or analysis returns `404` (the database hides it).
+  Linking an analysis to someone else's animal returns `403`.
 
 ### `POST /analyze`
 
@@ -136,6 +178,11 @@ in `api/.env`). See [`.env.example`](.env.example).
 | `GOPALAN_BREED_MODEL_PATH` | `models/breed_classifier.onnx` | Breed model |
 | `GOPALAN_BREED_LABELS_PATH` | `models/labels.json` | Breed labels and threshold |
 | `GOPALAN_BREED_CROP_TO_ANIMAL` | `true` | Classify the detected animal rather than the whole photo |
+| `GOPALAN_SUPABASE_URL` | (empty) | Supabase project URL; saving is off without it |
+| `GOPALAN_SUPABASE_PUBLISHABLE_KEY` | (empty) | Publishable (anon) key, never the secret key |
+| `GOPALAN_PHOTO_BUCKET` | `animal-photos` | Storage bucket for consented photos |
+| `GOPALAN_PHOTO_MAX_SIDE` | `2048` | Stored photos are resized to fit this |
+| `GOPALAN_SIGNED_URL_SECONDS` | `3600` | How long photo links stay valid |
 | `GOPALAN_CACHE_TTL_MINUTES` | `30` | How long `/recompute` can re-check ribs on the photo |
 | `GOPALAN_CACHE_MAX_ENTRIES` | `32` | Photos kept in memory at most |
 | `GOPALAN_CACHE_MAX_SIDE` | `1600` | Photos are downscaled to this size in memory |
