@@ -13,11 +13,13 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from . import __version__
+from .analysis import router as analysis_router
+from .cache import PhotoCache
 from .config import Settings, get_settings
 from .images import ImageError
 from .models import ModelRegistry, load_registry
@@ -50,6 +52,9 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.photo_cache = PhotoCache(
+        settings.cache_ttl_minutes * 60, settings.cache_max_entries, settings.cache_max_side
+    )
 
     app.add_middleware(
         CORSMiddleware,
@@ -62,6 +67,14 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
     @app.exception_handler(ImageError)
     async def image_error(_: Request, exc: ImageError):
         return JSONResponse(status_code=exc.status, content={"error": "invalid_image", "message": str(exc)})
+
+    @app.exception_handler(HTTPException)
+    async def http_error(_: Request, exc: HTTPException):
+        # Same shape as other errors: {"error": ..., "message": ...}
+        content = exc.detail if isinstance(exc.detail, dict) else {"error": "http_error", "message": str(exc.detail)}
+        return JSONResponse(status_code=exc.status_code, content=content, headers=getattr(exc, "headers", None))
+
+    app.include_router(analysis_router)
 
     @app.get("/health", tags=["system"])
     async def health(request: Request):

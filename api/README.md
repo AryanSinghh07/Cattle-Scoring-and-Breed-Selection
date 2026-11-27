@@ -11,10 +11,72 @@ requests.
 | Method | Path | What it does |
 |---|---|---|
 | GET | `/health` | Status and which models are loaded |
+| POST | `/analyze` | Photos in → animal, body points, marker, measurements, BCS (beta), breed |
+| POST | `/recompute` | Adjusted body points in → new measurements and BCS (no detection) |
 | GET | `/docs` | Interactive API documentation |
 
-More endpoints (`/analyze`, `/recompute`, saving, reviews) are added in the
-next Stage 3 issues.
+Saving and review endpoints are added in later Stage 3 issues.
+
+### `POST /analyze`
+
+`multipart/form-data`:
+
+| Field | Required | Meaning |
+|---|---|---|
+| `side` | yes | Side-view photo |
+| `top`, `back` | no | Top and back photos (rump/hip comparison) |
+| `marker_cm` | no (20) | Printed ArUco marker side length in cm |
+| `facing` | no (`auto`) | `auto`, `left` or `right` for the side photo |
+
+```bash
+curl -F side=@cow_side.jpg -F marker_cm=20 http://127.0.0.1:8000/analyze
+```
+
+Response (shortened):
+
+```json
+{
+  "analysis_id": "4f0c…",
+  "expires_in_seconds": 1800,
+  "views": {"side": {"animal": {"label": "cow", "score": 0.99, "box": [..]},
+                     "outline": [[x, y], ..], "facing": "right",
+                     "points": {"nose": {"x": .., "y": .., "confidence": 0.85}, ..},
+                     "marker": {"cm_per_px": 0.4, ..}, "warnings": []}},
+  "measurements": {"body_length_cm": 192.3, "body_depth_cm": 67.2, "depth_ratio": 0.349, ..},
+  "bcs": {"score": 2.75, "farmer_score": 3.0, "label": "Ideal", "confidence": 0.51, "beta": true, ..},
+  "breed": {"breed": "gir", "name": "Gir", "confidence": 0.912, "unsure": false, "top": [..]},
+  "warnings": [],
+  "timing_ms": 2329
+}
+```
+
+Problems with the photos (no animal, no marker, unclear direction) come back
+as `warnings` with HTTP 200 so the app can guide the user. Bad files return
+`413`/`415`, and `503` means the models aren't loaded yet. Breed is predicted
+on the detected animal (cropped with a 10% margin); below the model's
+threshold it is `"unsure"` with the top guesses.
+
+### `POST /recompute`
+
+For the semi-automatic step: when the user drags points, send them back to
+get new measurements and BCS instantly (about 2 ms on the server).
+
+```json
+{
+  "analysis_id": "4f0c…",
+  "points": {"side": {"nose": {"x": 812, "y": 260, "confidence": 1.0}, "...": {}}},
+  "scales": {"side": 0.4},
+  "rib_visibility": 0.059
+}
+```
+
+- `points.side` needs all 8 side points; `top`/`back` need their 2 points.
+- `scales` are the `marker.cm_per_px` values from `/analyze`; without them
+  only ratios (and the BCS) are returned, no centimetres.
+- With a valid `analysis_id`, rib visibility is re-checked on the photo
+  (the rib box may have moved). The side photo is kept **in memory only**,
+  downscaled, for 30 minutes (`GOPALAN_CACHE_TTL_MINUTES`), never on disk.
+  After that, the given `rib_visibility` is reused.
 
 `/health` example:
 
@@ -51,8 +113,12 @@ set PYTHONPATH=../ml              # macOS/Linux: export PYTHONPATH=../ml
 uvicorn app.main:app --reload --port 8000
 ```
 
-Open http://localhost:8000/docs. The first start downloads the Mask R-CNN
+Open http://127.0.0.1:8000/docs. The first start downloads the Mask R-CNN
 weights (~180 MB) into the PyTorch cache.
+
+Tip for Windows: call the API at `127.0.0.1` rather than `localhost` from
+scripts. Some clients try IPv6 first and wait ~2 seconds per request before
+falling back.
 
 ## Settings
 
@@ -69,6 +135,10 @@ in `api/.env`). See [`.env.example`](.env.example).
 | `GOPALAN_DETECTION_THRESHOLD` | `0.5` | Minimum detection score |
 | `GOPALAN_BREED_MODEL_PATH` | `models/breed_classifier.onnx` | Breed model |
 | `GOPALAN_BREED_LABELS_PATH` | `models/labels.json` | Breed labels and threshold |
+| `GOPALAN_BREED_CROP_TO_ANIMAL` | `true` | Classify the detected animal rather than the whole photo |
+| `GOPALAN_CACHE_TTL_MINUTES` | `30` | How long `/recompute` can re-check ribs on the photo |
+| `GOPALAN_CACHE_MAX_ENTRIES` | `32` | Photos kept in memory at most |
+| `GOPALAN_CACHE_MAX_SIDE` | `1600` | Photos are downscaled to this size in memory |
 
 If the breed model files are missing, the API still starts and reports
 `degraded`; breed prediction is simply left out.
