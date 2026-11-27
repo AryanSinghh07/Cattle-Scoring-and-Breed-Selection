@@ -58,32 +58,53 @@ def analyze_photos(
         out["warnings"].append("No body points on the side photo, so nothing can be measured.")
         return out
 
+    out["measurements"], out["bcs"], warnings = measure_and_score(points, scales, side_image=side)
+    out["warnings"].extend(warnings)
+    return out
+
+
+def measure_and_score(
+    points: dict[str, dict],
+    scales: dict[str, float],
+    side_image: np.ndarray | None = None,
+    rib_visibility: float | None = None,
+) -> tuple[dict, dict | None, list[str]]:
+    """Measurements and BCS from body points (detected or adjusted by the user).
+
+    ``points`` maps view -> {point name: {"x", "y", "confidence"?}}; ``side`` is
+    required. ``scales`` maps view -> cm per pixel for views whose marker was
+    read. Rib visibility is computed from ``side_image`` when given, otherwise
+    ``rib_visibility`` is used as is. Returns (measurements, bcs or None, warnings).
+    """
+    warnings: list[str] = []
     # Ratios don't depend on the scale, so use 1.0 where the marker is missing.
     m = measure(
         {v: scales.get(v, 1.0) for v in points},
         side_points=points["side"],
-        side_image=side,
+        side_image=side_image,
         top_points=points.get("top"),
         back_points=points.get("back"),
     )
+    if side_image is None:
+        m.rib_visibility = rib_visibility
     # The rump/hip ratio mixes two photos, so it needs a real scale on both.
     if ("top" in points and "back" in points) and not ("top" in scales and "back" in scales):
         m.rump_width_cm = m.hip_width_cm = None
-        out["warnings"].append("Rump/hip comparison skipped: the marker must be visible in both top and back photos.")
+        warnings.append("Rump/hip comparison skipped: the marker must be visible in both top and back photos.")
 
     measurements = m.to_dict()
     for f in CM_FIELDS:
         view = "side" if f in CM_FIELDS[:3] else ("top" if f == "rump_width_cm" else "back")
         if view not in scales:
             measurements[f] = None
-    out["measurements"] = measurements
 
-    side_conf = [p["confidence"] for p in points["side"].values()]
+    side_conf = [float(p.get("confidence", 1.0)) for p in points["side"].values()]
+    bcs = None
     try:
-        out["bcs"] = estimate_bcs(m, point_confidence=float(np.mean(side_conf))).to_dict()
+        bcs = estimate_bcs(m, point_confidence=float(np.mean(side_conf))).to_dict()
     except ValueError as e:
-        out["warnings"].append(str(e))
-    return out
+        warnings.append(str(e))
+    return measurements, bcs, warnings
 
 
 def main(argv: list[str] | None = None) -> int:

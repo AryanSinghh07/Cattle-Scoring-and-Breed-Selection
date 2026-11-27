@@ -41,6 +41,27 @@ def test_full_pipeline_with_marker():
     assert 1.0 <= bcs["score"] <= 5.0 and bcs["beta"] is True
 
 
+def test_measure_and_score_reuses_rib_value_without_photo():
+    from gopalan_ml.analyze import measure_and_score
+
+    img, mask = side_photo(with_marker=True)
+    out = analyze_photos(FakeDetector(mask), img)
+    pts = {"side": out["views"]["side"]["points"]}
+    scale = {"side": out["views"]["side"]["marker"]["cm_per_px"]}
+    rib = out["measurements"]["rib_visibility"]
+
+    meas, bcs, _ = measure_and_score(pts, scale, rib_visibility=rib)
+    assert meas == out["measurements"]
+    assert bcs["score"] == out["bcs"]["score"]
+
+    # Moving the belly down makes the body deeper -> the score can't go down.
+    moved = {k: dict(v) for k, v in pts["side"].items()}
+    moved["belly"]["y"] += 40
+    meas2, bcs2, _ = measure_and_score({"side": moved}, scale, rib_visibility=rib)
+    assert meas2["body_depth_cm"] > meas["body_depth_cm"]
+    assert bcs2["score"] >= bcs["score"]
+
+
 def test_pipeline_without_marker_still_scores_but_no_cm():
     img, mask = side_photo(with_marker=False)
     out = analyze_photos(FakeDetector(mask), img)
