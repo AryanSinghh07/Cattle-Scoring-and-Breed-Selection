@@ -104,6 +104,24 @@ def main() -> int:
             public = httpx.get(f"{url}/storage/v1/object/public/{settings.photo_bucket}/{created['photo']}", timeout=20)
             step(public.status_code != 200, f"photo is NOT publicly readable ({public.status_code})")
 
+            role = httpx.get(f"{url}/rest/v1/profiles", params={"select": "role", "id": f"eq.{uid}"},
+                             headers=rest, timeout=20).json()[0]["role"]
+            if role in ("reviewer", "admin"):
+                q = api.get("/review/queue", headers=auth, params={"limit": 100}).json()
+                step(saved["id"] in [i["id"] for i in q["items"]], f"review queue lists the analysis ({q['waiting']} waiting)")
+                new_bcs = 3.0 if saved["bcs_score"] != 3.0 else 3.25
+                r = api.put(f"/review/{saved['id']}", headers=auth, json={"decision": "corrected", "bcs_score": new_bcs,
+                                                                          "notes": "live check"})
+                step(r.status_code == 200, f"submit a correction ({r.status_code})")
+                q = api.get("/review/queue", headers=auth, params={"limit": 100}).json()
+                step(saved["id"] not in [i["id"] for i in q["items"]], "reviewed analysis left the queue")
+                lines = [json.loads(x) for x in api.get("/review/export/labels", headers=auth).text.splitlines()]
+                mine = [x for x in lines if x["analysis_id"] == saved["id"]]
+                step(len(mine) == 1 and mine[0]["label_bcs"] == new_bcs, "export contains the human label")
+            else:
+                print(f"  ..   review steps skipped (test user's role is '{role}'; make it 'reviewer' to include them)")
+                step(api.get("/review/queue", headers=auth).status_code == 403, "non-reviewer is refused by the review queue")
+
             step(api.get("/animals").status_code == 401, "without sign-in: refused")
             anon = httpx.get(f"{url}/rest/v1/analyses", params={"id": f"eq.{saved['id']}"}, headers={"apikey": key}, timeout=20)
             step(anon.status_code in (401, 403) or anon.json() == [], "anonymous database read sees nothing")
