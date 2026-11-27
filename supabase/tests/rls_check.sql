@@ -4,7 +4,8 @@
 -- transaction, checks who can see what, then ROLLS BACK so nothing stays in
 -- the database. Any failed check stops the script with "FAIL: ...".
 --
--- Run in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
+-- Run in the Supabase dashboard after ALL migrations in supabase/migrations:
+-- SQL Editor -> New query -> paste -> Run.
 -- Expected last result: "All security checks passed".
 
 begin;
@@ -68,6 +69,12 @@ begin
     raise exception 'FAIL: a farmer was able to write a review';
   exception when insufficient_privilege then null;
   end;
+
+  begin
+    perform * from public.review_queue(10);
+    raise exception 'FAIL: a farmer opened the review queue';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 -- ---- Act as farmer B ---------------------------------------------------------
@@ -105,8 +112,18 @@ begin
   end if;
   if (select count(*) from public.animals) <> 0 then raise exception 'FAIL: reviewer can see animals'; end if;
 
+  if (select count(*) from public.review_queue(10)) <> 1
+     or (select q.id from public.review_queue(10) q) <> '00000000-0000-4000-8000-00000000ab02' then
+    raise exception 'FAIL: review queue should list only the 1 consented analysis';
+  end if;
+  if public.review_queue_size() <> 1 then raise exception 'FAIL: review queue size should be 1'; end if;
+
   insert into public.reviews (analysis_id, decision, bcs_score, notes)
   values ('00000000-0000-4000-8000-00000000ab02', 'corrected', 3.0, 'rls check');
+
+  if (select count(*) from public.review_queue(10)) <> 0 then
+    raise exception 'FAIL: a reviewed analysis is still in the queue';
+  end if;
 
   begin
     insert into public.reviews (analysis_id, decision) values ('00000000-0000-4000-8000-00000000ab01', 'confirmed');
@@ -133,6 +150,12 @@ begin
   begin
     perform 1 from public.analyses limit 1;
     raise exception 'FAIL: anonymous visitors can read analyses';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform * from public.review_queue(10);
+    raise exception 'FAIL: anonymous visitors can open the review queue';
   exception when insufficient_privilege then null;
   end;
 end $$;

@@ -80,6 +80,11 @@ class Supabase:
         self._raise(r)
         return r.json()
 
+    def rpc(self, token: str, function: str, args: dict[str, Any] | None = None) -> Any:
+        r = self.http.post(f"{self.url}/rest/v1/rpc/{function}", json=args or {}, headers=self._headers(token))
+        self._raise(r)
+        return r.json()
+
     # -- storage --------------------------------------------------------------------
 
     def upload(self, token: str, bucket: str, path: str, data: bytes, content_type: str) -> None:

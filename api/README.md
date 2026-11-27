@@ -27,7 +27,39 @@ Saved data (needs sign-in, see below):
 | GET | `/analyses` | My recent analyses |
 | GET | `/analyses/{id}` | One saved analysis, with temporary photo links |
 
-Review endpoints are added in a later Stage 3 issue.
+Review (reviewers and admins only):
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/review/queue` | Consented analyses nobody has reviewed yet, least confident first, with photo links and the number waiting |
+| GET | `/review/{id}` | One analysis with photos and my existing review |
+| PUT | `/review/{id}` | Confirm or correct BCS and/or breed (submitting again updates my review) |
+| GET | `/review/export/labels` | Reviewed results as training data (`?format=jsonl` or `csv`) |
+
+### Review
+
+The semi-automatic loop: the system suggests BCS and breed, and a reviewer
+checks it. Reviewed values become the training labels for the learned BCS
+model planned for v3.
+
+- Only users whose `profiles.role` is `reviewer` or `admin` can use these
+  endpoints (`403 not_reviewer` otherwise). Roles are set in SQL; see
+  [`supabase/README.md`](../supabase/README.md).
+- The queue comes from the database function `review_queue()`, so an item
+  reviewed by **anyone** leaves the queue for everyone. Analyses without
+  photo consent are never shown.
+- `PUT /review/{id}` body:
+
+  ```json
+  {"decision": "corrected", "bcs_score": 3.25, "breed_slug": "gir", "notes": "ribs less visible than scored"}
+  ```
+
+  `confirmed` keeps the model's BCS and breed (they're filled in).
+  `corrected` needs a different BCS (1–5, 0.25 steps) and/or breed.
+- The export pairs the human label with the model output, plus points,
+  measurements and photo storage paths. Reviewers export their own reviews;
+  admins export everyone's. Read it in Python with
+  `gopalan_ml.review_data.read_review_export(path)`.
 
 ### Sign-in and saving
 
