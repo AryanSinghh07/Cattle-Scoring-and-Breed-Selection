@@ -65,6 +65,55 @@ Prints JSON:
 The preview image shows the outline in green and points in red (orange when
 the confidence is below 0.5).
 
+## Breed classifier
+
+Recognises the **16 website breeds** (8 cattle, 8 buffalo). Data sources,
+cleaning and known issues are in [DATASETS.md](DATASETS.md).
+
+**Train on Kaggle (free GPU):** open
+[`notebooks/train_breed_classifier.ipynb`](notebooks/train_breed_classifier.ipynb)
+on Kaggle, turn on GPU and Internet, add both datasets as inputs and
+**Run all** (~20–30 min on a T4). The notebook calls
+`gopalan_ml/breed_train.py`, which:
+
+1. prepares the data (`breed_data.py`): breed-name mapping, file checks,
+   duplicate removal across both datasets, 70/15/15 split per breed;
+2. fine-tunes **ConvNeXt-Tiny** (`timm`, ImageNet-22k pretrained) with
+   augmentation, label smoothing and class weights; keeps the epoch with
+   the best validation macro-F1;
+3. picks an **"unsure" threshold** on the validation set: the lowest
+   confidence at which answered predictions are at least 90% correct;
+4. reports test accuracy, top-3 accuracy, macro-F1, per-breed
+   precision/recall and a confusion matrix;
+5. exports **ONNX** (checked against PyTorch) plus `labels.json`.
+
+Outputs: `breed_classifier.onnx`, `labels.json`, `metrics.json`,
+`confusion_matrix.png`, `training_curves.png`, `manifest.csv`, `best.pt`.
+
+**Predict** (needs only `onnxruntime`, not PyTorch):
+
+```bash
+python -m gopalan_ml.breed photo.jpg --model breed_classifier.onnx --labels labels.json
+```
+
+```json
+{"breed": "gir", "name": "Gir", "type": "cow", "confidence": 0.93, "unsure": false,
+ "top": [{"slug": "gir", "confidence": 0.93}, {"slug": "kankrej", "confidence": 0.04}, ...]}
+```
+
+Below the threshold, `breed` is `"unsure"` and `top` lists the best guesses
+so the app can ask the user instead of showing a wrong breed. The
+preprocessing matches timm's evaluation transform exactly (checked to 0
+difference on 30 photos).
+
+**Local smoke test** (CPU, a few minutes, checks the pipeline, not accuracy):
+
+```bash
+pip install -r requirements-train.txt
+python -m gopalan_ml.breed_train --data-dir "<bovine>" --data-dir "<buffalo>" \
+  --epochs 1 --limit-per-class 8 --workers 0 --out outputs/breed_smoke
+```
+
 ## Tests
 
 ```bash
