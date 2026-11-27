@@ -30,6 +30,9 @@ MAX_SIDE = 1024
 PRIMARY_LABEL = "cow"
 FALLBACK_LABELS = ("horse", "sheep", "elephant", "bear")
 
+# Preview colours (BGR): nose blue, tail yellow.
+END_COLOURS = {"nose": (255, 80, 0), "tail": (0, 220, 255)}
+
 
 @dataclass
 class Detection:
@@ -179,7 +182,10 @@ def draw_preview(image_rgb: np.ndarray, result: dict) -> np.ndarray:
     for name, p in result["points"].items():
         x, y = int(p["x"]), int(p["y"])
         colour = (0, 0, 255) if p["confidence"] >= 0.5 else (0, 165, 255)  # red, or orange if unsure
-        cv2.circle(img, (x, y), thick * 3, colour, -1)
+        radius = thick * 3
+        if name in END_COLOURS:  # make head/tail direction obvious at a glance
+            colour, radius = END_COLOURS[name], thick * 6
+        cv2.circle(img, (x, y), radius, colour, -1)
         cv2.putText(img, name, (x + thick * 4, y - thick * 2), cv2.FONT_HERSHEY_SIMPLEX, size / 1600, (255, 255, 255), thick, cv2.LINE_AA)
     return img
 
