@@ -56,7 +56,9 @@ class TrainConfig:
     seed: int = 42
     device: str | None = None
     limit_per_class: int | None = None
-    target_precision: float = 0.90  # for the "unsure" threshold
+    # For the "unsure" threshold. 0.90 made the first model answer only 31% of
+    # photos; 0.80 answers ~79% while keeping ~81% of answers correct.
+    target_precision: float = 0.80
     out_dir: Path = field(default_factory=lambda: Path("outputs/breed"))
 
 
