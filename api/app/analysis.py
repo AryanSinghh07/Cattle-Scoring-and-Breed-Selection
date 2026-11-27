@@ -79,12 +79,18 @@ def recompute(request: Request, body: RecomputeRequest):
     """Recalculates measurements and BCS from adjusted points, without running
     detection again. With a valid `analysis_id`, rib visibility is re-checked on
     the photo (the rib box may have moved); otherwise `rib_visibility` is reused."""
+    return compute_from_points(body, request.app.state.photo_cache)
+
+
+def compute_from_points(body: RecomputeRequest, photo_cache) -> RecomputeResponse:
+    """Measurements and BCS from (possibly user-adjusted) points. Shared by
+    ``/recompute`` and saving, so stored results are always computed server-side."""
     warnings: list[str] = []
     points = {v: {k: p.model_dump() for k, p in pts.items()} for v, pts in body.points.items()}
     scales = {v: s for v, s in body.scales.items() if s is not None}
 
     rib, source = None, "none"
-    cached = request.app.state.photo_cache.get(body.analysis_id) if body.analysis_id else None
+    cached = photo_cache.get(body.analysis_id) if body.analysis_id else None
     if cached is not None:
         f = cached.factor
         tl, br = points["side"]["rib_top_left"], points["side"]["rib_bottom_right"]
