@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     detection_threshold: float = 0.5
     breed_model_path: str = "models/breed_classifier.onnx"
     breed_labels_path: str = "models/labels.json"
+    # If the files above don't exist, download them from this public Hugging Face model repo.
+    breed_model_repo: str | None = None
+    breed_model_revision: str | None = None  # branch, tag or commit; None = latest
     breed_crop_to_animal: bool = True  # classify the detected animal, not the whole photo
 
     # Supabase (saving). Only the URL and the *publishable* key are needed:

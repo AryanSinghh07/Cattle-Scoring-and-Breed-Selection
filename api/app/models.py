@@ -45,9 +45,35 @@ class ModelRegistry:
         }
 
 
-def load_registry(detection_threshold: float, breed_model_path: str, breed_labels_path: str) -> ModelRegistry:
-    """Load both models. Failures are recorded instead of crashing the API."""
+BREED_FILES = ("breed_classifier.onnx", "labels.json")
+
+
+def fetch_breed_model(repo_id: str, revision: str | None = None) -> tuple[Path, Path]:
+    """Download (or reuse from the local cache) the breed model files from Hugging Face."""
+    from huggingface_hub import hf_hub_download
+
+    model, labels = (Path(hf_hub_download(repo_id, name, revision=revision)) for name in BREED_FILES)
+    return model, labels
+
+
+def load_registry(detection_threshold: float, breed_model_path: str, breed_labels_path: str,
+                  breed_model_repo: str | None = None, breed_model_revision: str | None = None) -> ModelRegistry:
+    """Load both models. Failures are recorded instead of crashing the API.
+
+    The breed model is read from ``breed_model_path``/``breed_labels_path``; if
+    those files don't exist and ``breed_model_repo`` is set, it is downloaded
+    from that Hugging Face model repo instead.
+    """
     reg = ModelRegistry()
+    source = "local files"
+    if breed_model_repo and not (Path(breed_model_path).is_file() and Path(breed_labels_path).is_file()):
+        try:
+            m, lab = fetch_breed_model(breed_model_repo, breed_model_revision)
+            breed_model_path, breed_labels_path = str(m), str(lab)
+            source = f"huggingface.co/{breed_model_repo}" + (f"@{breed_model_revision}" if breed_model_revision else "")
+        except Exception as e:
+            log.exception("Breed model download failed")
+            reg.errors["breed"] = f"Download from {breed_model_repo} failed: {type(e).__name__}: {e}"
 
     try:
         from gopalan_ml.detect import AnimalDetector
@@ -69,10 +95,13 @@ def load_registry(detection_threshold: float, breed_model_path: str, breed_label
                 "classes": len(reg.breed.classes),
                 "unsure_threshold": reg.breed.threshold,
                 "version": _short_hash(model),
+                "source": source,
             }
         except Exception as e:
             log.exception("Breed model failed to load")
             reg.errors["breed"] = f"{type(e).__name__}: {e}"
+    elif "breed" in reg.errors:
+        pass  # download error already recorded
     else:
         reg.errors["breed"] = f"Model files not found ({model}, {labels}); breed prediction is off."
         log.warning(reg.errors["breed"])
