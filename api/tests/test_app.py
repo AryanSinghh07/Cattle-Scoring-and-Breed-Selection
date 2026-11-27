@@ -103,6 +103,45 @@ def test_load_registry_reports_missing_breed_files(tmp_path, monkeypatch):
     assert "not found" in reg.errors["breed"]
 
 
+def test_load_registry_downloads_breed_model_when_missing(tmp_path, monkeypatch):
+    import gopalan_ml.breed as breed_mod
+    import gopalan_ml.detect as det
+    import app.models as models
+
+    calls = []
+
+    def fake_fetch(repo, revision):
+        calls.append((repo, revision))
+        (tmp_path / "m.onnx").write_bytes(b"onnx")
+        (tmp_path / "l.json").write_text(json.dumps({"classes": ["gir"], "unsure_threshold": 0.45, "model_name": "x"}))
+        return tmp_path / "m.onnx", tmp_path / "l.json"
+
+    class FakeClassifier:
+        def __init__(self, model, labels):
+            self.labels = json.loads(open(labels).read())
+            self.classes, self.threshold = self.labels["classes"], self.labels["unsure_threshold"]
+
+    monkeypatch.setattr(det, "AnimalDetector", lambda score_threshold: StubDetector())
+    monkeypatch.setattr(models, "fetch_breed_model", fake_fetch)
+    monkeypatch.setattr(breed_mod, "BreedClassifier", FakeClassifier)
+    reg = load_registry(0.5, str(tmp_path / "missing.onnx"), str(tmp_path / "missing.json"), "owner/model", "v1")
+    assert calls == [("owner/model", "v1")]
+    assert reg.breed is not None and reg.info["breed"]["source"] == "huggingface.co/owner/model@v1"
+
+
+def test_load_registry_reports_download_failure(tmp_path, monkeypatch):
+    import gopalan_ml.detect as det
+    import app.models as models
+
+    def boom(repo, revision):
+        raise OSError("offline")
+
+    monkeypatch.setattr(det, "AnimalDetector", lambda score_threshold: StubDetector())
+    monkeypatch.setattr(models, "fetch_breed_model", boom)
+    reg = load_registry(0.5, str(tmp_path / "a"), str(tmp_path / "b"), "owner/model")
+    assert reg.breed is None and "offline" in reg.errors["breed"]
+
+
 def test_load_registry_survives_detector_failure(tmp_path, monkeypatch):
     import gopalan_ml.detect as det
 

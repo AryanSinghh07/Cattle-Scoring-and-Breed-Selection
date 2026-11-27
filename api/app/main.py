@@ -44,7 +44,8 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
         elif settings.load_models:
             t0 = time.time()
             app.state.registry = load_registry(
-                settings.detection_threshold, settings.breed_model_path, settings.breed_labels_path
+                settings.detection_threshold, settings.breed_model_path, settings.breed_labels_path,
+                settings.breed_model_repo, settings.breed_model_revision,
             )
             log.info("Models loaded in %.1fs", time.time() - t0)
         else:

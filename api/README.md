@@ -209,6 +209,8 @@ in `api/.env`). See [`.env.example`](.env.example).
 | `GOPALAN_DETECTION_THRESHOLD` | `0.5` | Minimum detection score |
 | `GOPALAN_BREED_MODEL_PATH` | `models/breed_classifier.onnx` | Breed model |
 | `GOPALAN_BREED_LABELS_PATH` | `models/labels.json` | Breed labels and threshold |
+| `GOPALAN_BREED_MODEL_REPO` | (empty) | Hugging Face model repo to download the breed model from when the files above don't exist |
+| `GOPALAN_BREED_MODEL_REVISION` | (latest) | Branch, tag or commit of that repo |
 | `GOPALAN_BREED_CROP_TO_ANIMAL` | `true` | Classify the detected animal rather than the whole photo |
 | `GOPALAN_SUPABASE_URL` | (empty) | Supabase project URL; saving is off without it |
 | `GOPALAN_SUPABASE_PUBLISHABLE_KEY` | (empty) | Publishable (anon) key, never the secret key |
@@ -238,9 +240,56 @@ docker build -f api/Dockerfile -t gopalan-api .
 docker run -p 7860:7860 -v "$PWD/api/models:/app/api/models" gopalan-api
 ```
 
-Port 7860 and user id 1000 match Hugging Face Docker Spaces (deployment is
-covered in a later issue). The Mask R-CNN weights are downloaded during the
-build.
+Port 7860 and user id 1000 match Hugging Face Docker Spaces. The Mask R-CNN
+weights are downloaded during the build.
+
+## Models and hosting
+
+| What | Where | Status |
+|---|---|---|
+| Breed model (public model repo) | https://huggingface.co/thearyansingh/cattle-breed-classifier | ✅ published |
+| API | Runs locally (`uvicorn`, see [Run locally](#run-locally)) | Online hosting planned on **Google Cloud Run** |
+
+The names describe the service, not the brand, so they stay valid if the
+website is renamed.
+
+Any API instance can download the breed model from the public model repo at
+start-up: set `GOPALAN_BREED_MODEL_REPO=thearyansingh/cattle-breed-classifier`
+and leave the local model paths pointing at files that don't exist. No token
+is needed because the repo is public.
+
+**Publish a new model** (after a new Kaggle training run) needs a Hugging Face
+login with write access (`hf auth login`):
+
+```bash
+cd api
+python scripts/publish_model.py ../ml/outputs/<run>/breed_model --repo thearyansingh/cattle-breed-classifier
+```
+
+This uploads the ONNX model, `labels.json`, `metrics.json`, the charts and a
+generated model card. Running APIs pick up the new model at their next restart.
+Pin a version with `GOPALAN_BREED_MODEL_REVISION`.
+
+Tip: if an upload hangs with no progress on Windows, set `HF_HUB_DISABLE_XET=1`
+to use the classic upload method (it shows a progress bar).
+
+### Hugging Face Spaces (needs PRO)
+
+`scripts/deploy_space.py` deploys the API as a Hugging Face **Docker Space**.
+It uploads only `ml/gopalan_ml`, `api/app`, the requirement files and the
+Dockerfile (with Linux line endings), and sets public Space variables (Supabase
+URL, publishable key, model repo, allowed origins). Since late 2026 Hugging Face
+requires a **PRO** subscription for Docker Spaces (`402 Payment Required` on the
+free plan), so this route is only usable with PRO:
+
+```bash
+cd api
+python scripts/deploy_space.py --space thearyansingh/cattle-analysis-api \
+  --model-repo thearyansingh/cattle-breed-classifier [--dry-run]
+```
+
+The API needs about 2 GB of memory (PyTorch + Mask R-CNN), so hosting tiers
+with 512 MB are too small.
 
 ## Tests
 
