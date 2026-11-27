@@ -1,0 +1,8 @@
+# CPU builds of PyTorch keep the install small; Kaggle notebooks use their own GPU builds.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4,<3
+torchvision>=0.19,<1
+opencv-contrib-python-headless>=4.10,<5
+numpy>=1.26,<3
+pillow>=10.4
+pytest>=8.3
