@@ -1,0 +1,15 @@
+# Keep the Docker build context small: only ml/ and api/ sources are needed.
+node_modules
+dist
+src
+public
+.git
+.github
+**/.venv
+**/__pycache__
+**/.pytest_cache
+ml/outputs
+ml/notebooks
+ml/data
+api/models
+**/.env

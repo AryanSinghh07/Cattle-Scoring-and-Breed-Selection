@@ -36,6 +36,7 @@ venv/
 /data/
 ml/data/
 ml/outputs/
+api/models/
 *.pt
 *.pth
 *.onnx
