@@ -31,7 +31,7 @@ _BELLY_RANGE = (0.40, 0.70)
 _FRONT_LEG_RANGE = (0.15, 0.50)
 _RIB_RANGE = (0.35, 0.55)
 _RUMP_POSITION = 0.80
-_END_FRACTION = 0.20
+_END_FRACTION = 0.15
 
 
 @dataclass
@@ -91,7 +91,7 @@ def side_points(mask: np.ndarray, facing: str = "auto") -> KeypointResult:
     tops, run_bottoms, bottoms = _column_profiles(mask, x0, x1)
 
     if facing == "auto":
-        facing, facing_conf = _guess_facing(tops, height)
+        facing, facing_conf = _guess_facing(mask[:, x0 : x1 + 1].sum(axis=0))
         if facing_conf < 0.4:
             warnings.append("Could not tell which way the animal faces; check nose and tail.")
     elif facing in ("left", "right"):
@@ -190,16 +190,22 @@ def _column_profiles(mask: np.ndarray, x0: int, x1: int) -> tuple[np.ndarray, np
     return tops, run_bottoms, bottoms
 
 
-def _guess_facing(tops: np.ndarray, height: int) -> tuple[str, float]:
-    """The head end usually sits lower than the rump: compare the top line at both ends."""
-    n = max(1, int(round(tops.size * _END_FRACTION)))
-    left = tops[:n][tops[:n] >= 0]
-    right = tops[-n:][tops[-n:] >= 0]
-    if left.size == 0 or right.size == 0:
+def _guess_facing(thickness: np.ndarray) -> tuple[str, float]:
+    """Which end is the head?
+
+    Seen from the side, the head end of the outline is thin (just head and
+    neck), while the rear end is tall (rump down to the hocks). Comparing the
+    top line instead does not work for zebu cattle, whose hump and horns make
+    the front end higher.
+    """
+    n = max(1, int(round(thickness.size * _END_FRACTION)))
+    left = float(thickness[:n].mean())
+    right = float(thickness[-n:].mean())
+    if max(left, right) == 0:
         return "left", 0.0
-    diff = float(left.mean() - right.mean())
-    confidence = min(1.0, abs(diff) / (0.10 * height))
-    return ("left" if diff > 0 else "right"), confidence
+    ratio = min(left, right) / max(left, right)
+    confidence = min(1.0, (1.0 - ratio) / 0.4)
+    return ("left" if left < right else "right"), confidence
 
 
 def _end_point(mask: np.ndarray, x0: int, cols: np.ndarray) -> tuple[float, float]:

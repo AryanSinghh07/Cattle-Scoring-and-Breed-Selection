@@ -48,6 +48,17 @@ def test_side_points_facing_right_mirrors():
     assert 465 <= p["hoof"].x <= 555  # mirrored front legs
 
 
+def test_zebu_hump_and_horns_do_not_flip_facing():
+    """Indian zebu cattle are higher at the front (hump, horns) than at the rump."""
+    m = side_cow("left")
+    m[70:121, 220:300] = True  # hump above the shoulders
+    for i in range(60):  # horns rising above the head
+        m[120 - i : 124 - i, 90 + i // 3 : 94 + i // 3] = True
+    r = place_points(m, "side")
+    assert r.facing == "left"
+    assert r.points["nose"].x < 70
+
+
 def test_side_points_forced_facing():
     r = place_points(side_cow("left"), "side", facing="right")
     assert r.facing == "right"
