@@ -17,6 +17,15 @@ Built to support the **Rashtriya Gokul Mission** 🇮🇳
 
 </div>
 
+> [!WARNING]
+> ### 🚧 Under maintenance: version 2 in progress
+>
+> **Version 2** adds a new AI pipeline, an API and a database. They are built and tested, and live in
+> this repository ([`ml/`](ml), [`api/`](api), [`supabase/`](supabase)).
+> The **live website is still version 1** and doesn't use the new AI yet. A completely
+> **new website** will connect everything in the **next version**.
+> See [What's new in v2](#-whats-new-in-v2) and the [Roadmap](#%EF%B8%8F-roadmap).
+
 ---
 
 ## 📖 Overview
@@ -83,10 +92,44 @@ Turn any smartphone into an objective evaluation tool using **computer vision + 
 
 ---
 
+## 🆕 What's new in v2
+
+Version 2 rebuilds the "brain" behind the website. The goal is a **semi-automatic** scoring system: the AI does
+the measuring and scoring, and a human reviewer checks it. This replaces today's fully manual body
+condition scoring in programmes like the Rashtriya Gokul Mission.
+
+| Part | What it does | Docs |
+|---|---|---|
+| 🧠 **ML** | Finds the cow or buffalo in a photo, outlines it and **places the body points automatically** (no more clicking 12 points by hand). Reads the ArUco marker for centimetres. Computes a **BCS v2 score (beta)**. | [`ml/README.md`](ml/README.md) |
+| 🐄 **Breed model** | Recognises **16 Indian breeds** (8 cattle, 8 buffalo), or answers "unsure" with its top 3 guesses | [Model on Hugging Face](https://huggingface.co/thearyansingh/cattle-breed-classifier) |
+| ⚙️ **API** | FastAPI service: analyse photos, recalculate when the user drags a point, save animals and history, reviewer queue, training-data export | [`api/README.md`](api/README.md) |
+| 🗄️ **Database** | Supabase: accounts, animals, analyses, reviews and private photo storage, with security rules enforced by the database | [`supabase/README.md`](supabase/README.md) |
+| ✅ **CI** | Every change is checked automatically: website lint and build, plus the ML and API test suites | [Workflow](.github/workflows/ci.yml) |
+
+**Key results**
+
+| | |
+|---|---|
+| Animal found in test photos (cattle and buffalo) | **48 / 48** |
+| Head/tail direction correct on side-view photos | **32 / 32** |
+| Breed: exact / correct breed in top 3 (508 unseen photos) | **72% / 90%** (cattle 83%, buffalo 62%) |
+| Breed with "unsure" option | answers 79% of photos, **81.5% correct** |
+| Old analyzer's BCS bugs fixed | **8 / 8** |
+| Analysis time (CPU) / re-score after dragging a point | ~2.5 s / ~2 ms |
+
+**Privacy by design:** trying an analysis needs no account. Photos are stored **only with the user's
+consent**, with GPS and other hidden photo data removed. Users can only ever see their own data.
+
+**Honest limits:** the BCS score is **beta**. It's calibrated on photo measurements, not yet on
+expert-scored animals. Reviewer corrections collected by the system are meant to train a learned BCS model
+later. The breed model was trained on web photos, and the buffalo folders of the source data are noisy.
+
+---
+
 ## ✨ Features
 
-- 🧠 **AI Body Condition Scoring** — objective, consistent scores from one photo.
-- 📏 **Accurate Measurement** — ArUco-based real-world sizing (height, length, girth).
+- 🧠 **AI Body Condition Scoring** — consistent scores from photos (v2: automatic body points, 1–5 in 0.25 steps, beta).
+- 📏 **Real-world Measurement** — ArUco-marker sizing: body length, depth, leg length, rump and hip width.
 - 🐄 **Breed Guide** — detailed profiles of 8 cattle and 8 buffalo indigenous breeds.
 - 🩺 **Health & Disease Support** — symptoms, causes, treatment, prevention, and emergency steps.
 - 📸 **Photography Guide** — how to capture analysis-ready photos with an ArUco marker.
@@ -120,11 +163,18 @@ Turn any smartphone into an objective evaluation tool using **computer vision + 
 
 ## 🛠️ Tech Stack
 
+**Website (v1, live)**
 - **[Vite](https://vitejs.dev/)** + **[React 18](https://react.dev/)** + **TypeScript**
 - **[Tailwind CSS](https://tailwindcss.com/)** with **[shadcn/ui](https://ui.shadcn.com/)** components
 - **[React Router](https://reactrouter.com/)** with route-level code splitting
 - Scroll-reveal & count-up animations, fully responsive
-- AI scoring served from a **Hugging Face Gradio** model, embedded in the Analyze page
+- Analyze page embeds the original **Hugging Face Gradio** analyzer (to be replaced by the v2 API)
+
+**AI and backend (v2)**
+- **Python 3.12**, **PyTorch / torchvision** (Mask R-CNN), **OpenCV** (ArUco), **ONNX Runtime**
+- Breed model: **ConvNeXt-Tiny** fine-tuned with **timm** on Kaggle GPUs
+- **FastAPI** + **Supabase** (Postgres, Auth, Storage) with row-level security
+- **GitHub Actions** CI; models published on **Hugging Face**
 
 ---
 
@@ -159,6 +209,16 @@ npm run build
 npm run preview
 ```
 
+**Run the v2 API locally** (Python 3.12):
+
+```bash
+cd ml && python -m venv .venv && .venv\Scripts\activate   # macOS/Linux: source .venv/bin/activate
+pip install -r ../api/requirements.txt
+cd ../api && uvicorn app.main:app --port 8000             # then open http://127.0.0.1:8000/docs
+```
+
+Full setup (models, Supabase, settings) is in [`api/README.md`](api/README.md).
+
 ### ✅ Automatic checks
 
 Every pull request and every push to `main` runs the [CI workflow](.github/workflows/ci.yml) on GitHub Actions:
@@ -176,7 +236,7 @@ A green ✓ on the pull request means all checks passed. The ML tools are descri
 ## 📁 Project Structure
 
 ```
-src/
+src/                 # Website (v1)
 ├── assets/          # Images and videos (breed photos, hero videos, logo)
 │   └── animals/     # Cattle & buffalo photos, ArUco marker, measurement guides
 ├── components/      # Shared sections & UI (Navbar, Hero, Footer, HeroDecor, ...)
@@ -185,6 +245,11 @@ src/
 ├── hooks/           # Shared React hooks
 ├── lib/             # Utilities
 └── pages/           # Route pages (Home, Analyze, Animal Guide, Medical Support, ...)
+
+ml/                  # v2 AI: detection, body points, measurements, BCS, breed training (Kaggle notebook)
+api/                 # v2 FastAPI service (analysis, saving, review) + Dockerfile + scripts
+supabase/            # v2 database migrations and security self-check
+.github/workflows/   # CI: website, ML and API checks
 ```
 
 ---
@@ -211,6 +276,20 @@ to `main` triggers an automatic rebuild and redeploy** — no manual steps.
 3. Netlify auto-detects the settings above — click **Deploy**.
 
 Any static host that serves `dist/` with an SPA fallback (Vercel, GitHub Pages, Cloudflare Pages, etc.) also works.
+
+The **v2 API** isn't hosted online yet. It runs locally for now, and deployment to Google Cloud Run is
+planned ([#24](https://github.com/AryanSinghh07/Cattle-Scoring-and-Breed-Selection/issues/24)).
+
+---
+
+## 🗺️ Roadmap
+
+| Version | Status | What |
+|---|---|---|
+| **v1** | ✅ Live | Website: breed guide, health support, photo guide, embedded analyzer |
+| **v2** | ✅ Done | AI pipeline (automatic body points, BCS v2 beta, 16-breed model), API, Supabase database with security rules, reviewer workflow, CI |
+| **v3** | 🚧 Next | **New website**: redesigned, mobile-first, Hindi + English, camera flow with draggable points, results, my animals and history, reviewer screen. Connected to the v2 API. API hosted online. |
+| Later | 📋 Planned | Learned BCS model trained on reviewer-confirmed scores; more breeds; offline support |
 
 ---
 
