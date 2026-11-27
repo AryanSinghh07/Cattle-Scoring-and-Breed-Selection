@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     detection_threshold: float = 0.5
     breed_model_path: str = "models/breed_classifier.onnx"
     breed_labels_path: str = "models/labels.json"
+    breed_crop_to_animal: bool = True  # classify the detected animal, not the whole photo
+
+    # Side photos kept in memory (never on disk) so /recompute can re-check ribs
+    cache_ttl_minutes: float = 30
+    cache_max_entries: int = 32
+    cache_max_side: int = 1600
 
     @property
     def max_upload_bytes(self) -> int:
