@@ -159,6 +159,17 @@ npm run build
 npm run preview
 ```
 
+### ✅ Automatic checks
+
+Every pull request and every push to `main` runs the [CI workflow](.github/workflows/ci.yml) on GitHub Actions:
+
+| Job | What it checks |
+|---|---|
+| Website | `npm ci`, `npm run lint`, `npm run build` |
+| ML | Python 3.12, installs `ml/requirements-train.txt`, runs the `ml/` test suite |
+
+A green ✓ on the pull request means both passed. The ML tools are described in [`ml/README.md`](ml/README.md).
+
 ---
 
 ## 📁 Project Structure
