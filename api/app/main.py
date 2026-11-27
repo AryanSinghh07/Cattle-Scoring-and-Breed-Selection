@@ -23,13 +23,18 @@ from .cache import PhotoCache
 from .config import Settings, get_settings
 from .images import ImageError
 from .models import ModelRegistry, load_registry
+from .records import router as records_router
+from .supabase import Supabase
 
 log = logging.getLogger("gopalan.api")
 
 
-def create_app(settings: Settings | None = None, registry: ModelRegistry | None = None) -> FastAPI:
-    """Build the app. Tests pass a ``registry`` with stand-in models."""
+def create_app(settings: Settings | None = None, registry: ModelRegistry | None = None,
+               supabase: Supabase | None = None) -> FastAPI:
+    """Build the app. Tests pass a ``registry`` with stand-in models and a fake ``supabase``."""
     settings = settings or get_settings()
+    if supabase is None and settings.supabase_url and settings.supabase_publishable_key:
+        supabase = Supabase(settings.supabase_url, settings.supabase_publishable_key)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -52,6 +57,7 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.supabase = supabase
     app.state.photo_cache = PhotoCache(
         settings.cache_ttl_minutes * 60, settings.cache_max_entries, settings.cache_max_side
     )
@@ -75,6 +81,7 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
         return JSONResponse(status_code=exc.status_code, content=content, headers=getattr(exc, "headers", None))
 
     app.include_router(analysis_router)
+    app.include_router(records_router)
 
     @app.get("/health", tags=["system"])
     async def health(request: Request):

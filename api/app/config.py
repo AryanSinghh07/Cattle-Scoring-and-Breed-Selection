@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     breed_labels_path: str = "models/labels.json"
     breed_crop_to_animal: bool = True  # classify the detected animal, not the whole photo
 
+    # Supabase (saving). Only the URL and the *publishable* key are needed:
+    # requests run with each user's own token, so database security rules apply.
+    supabase_url: str | None = None
+    supabase_publishable_key: str | None = None
+    photo_bucket: str = "animal-photos"
+    photo_max_side: int = 2048
+    signed_url_seconds: int = 3600
+
     # Side photos kept in memory (never on disk) so /recompute can re-check ribs
     cache_ttl_minutes: float = 30
     cache_max_entries: int = 32
