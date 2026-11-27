@@ -96,8 +96,8 @@ website (8 cattle from `lukex9442/indian-bovine-breeds`, 8 buffalo from
 |---|---|---|---|
 | Animal found | 24/24 | 24/24 | **48/48 (100%)** |
 | Detected as `cow` | 24/24 | 24/24 | 48/48 |
-| Photos that are a usable side view | 17 | 14 | 31 |
-| Head/tail direction correct (usable side views) | 17/17 | 14/14 | **31/31** |
+| Photos that are a usable side view | 17 | 15 | 32 |
+| Head/tail direction correct (usable side views) | 17/17 | 15/15 | **32/32** |
 | Time per photo (CPU) | ~2.7 s | ~2.4 s | |
 
 Findings:
@@ -121,6 +121,81 @@ Findings:
 
 These are web photos without an ArUco marker, so they test detection and
 point placement only, not measurements in cm.
+
+## Measurements and BCS v2 (beta)
+
+```bash
+python -m gopalan_ml.analyze --side side.jpg [--top top.jpg] [--back back.jpg] [--marker-cm 20]
+```
+
+Runs the whole chain: animal → points → marker scale → measurements → BCS.
+Only the side photo is required.
+
+### Marker (`marker.py`)
+
+Printed ArUco marker, dictionary `DICT_4X4_50`, **20 cm** by default
+(`--marker-cm` to change). It must be flat, fully visible, and at about the
+same distance from the camera as the animal. The largest marker is used if
+there are several. Markers under 20 px are rejected, and so are markers seen
+at a steep angle (longest/shortest side above 1.25).
+Without a usable marker the BCS is still estimated, because its signals are
+ratios, but centimetre values are left empty.
+
+### Measurements (`measure.py`)
+
+| Measurement | From |
+|---|---|
+| Body length | nose → tail (side) |
+| Body depth | back → belly (side) |
+| Leg length | knee → hoof (side): **rough**, because the knee point is an estimate |
+| Rump width | top view |
+| Hip width | back view |
+| Rib visibility | edge density in the rib box (side), 0–1 |
+
+Rib visibility is computed on the clean photo, on a fixed-size patch with
+normalised contrast and adaptive edge thresholds.
+
+### BCS v2 (`bcs.py`)
+
+Dairy standard **1–5 in 0.25 steps**, plus a farmer score rounded to 0.5,
+a label (Very thin / Thin / Ideal / Fat / Obese), a confidence (capped at
+0.9), and the signals that pushed the score up or down.
+
+| Signal | Thin anchor | Fat anchor | Weight |
+|---|---|---|---|
+| Depth ratio (depth ÷ length) | 0.28 | 0.48 | 0.50 |
+| Rib visibility | 0.12 | 0.02 | 0.25 |
+| Rump ÷ hip width | 0.85 | 1.05 | 0.25 |
+
+Signal values on the 32 usable side views from the detection check:
+
+| Signal | 10th pct | Median | 90th pct |
+|---|---|---|---|
+| Depth ratio | 0.27 | 0.38 | 0.48 |
+| Rib visibility | 0.00 | 0.06 | 0.12 |
+
+The depth-ratio and rib anchors come from this range. **The old analyzer used
+0.22 / 0.30 for the depth ratio, so it rated almost every Indian cow and
+buffalo as fat.** Rib visibility depends heavily on photo sharpness (blurry
+video stills score about 0), so it gets a lower weight.
+
+**Limits:** the anchors set the range of the scale, not its accuracy. Without
+expert-scored animals the score cannot be validated, so every result is
+marked `beta`. Reviewer-confirmed scores collected by the app are meant to
+recalibrate these anchors.
+
+### Fixes compared with the old Gradio analyzer
+
+| Old problem | Fix |
+|---|---|
+| Rib edges measured on the image with dots and labels drawn on it | Measured on the clean photo; the input is never modified |
+| Uncalibrated thresholds | Anchors from measured breed photos, configurable, documented as beta |
+| Only 1, 1.5, 2.5, 3.5, 4.5 or 5 possible | 0.25 steps across 1–5 |
+| Rib signal swayed by light, coat and resolution | Fixed-size patch, contrast normalisation, adaptive thresholds |
+| No marker checks | Size and tilt checks with clear messages |
+| RGB converted as BGR | RGB conversion |
+| Empty rib box → division by zero | Returns no value plus a warning |
+| Only the first marker used | Largest marker used, warning if several |
 
 ## Licences
 
