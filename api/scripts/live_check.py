@@ -117,7 +117,13 @@ def main() -> int:
         if created["animal"]:
             httpx.delete(f"{url}/rest/v1/animals", params={"id": f"eq.{created['animal']['id']}"}, headers=rest, timeout=20)
         left = httpx.get(f"{url}/rest/v1/animals", params={"tag_id": "eq.LIVE-CHECK"}, headers=rest, timeout=20).json()
-        print(f"  ..   cleanup: {'done' if left == [] else 'some rows remain: ' + str(left)}")
+        files_left = []
+        if created["photo"]:
+            folder = created["photo"].rsplit("/", 1)[0]
+            files_left = httpx.post(f"{url}/storage/v1/object/list/{settings.photo_bucket}", headers=rest,
+                                    json={"prefix": folder}, timeout=20).json()
+        clean = left == [] and files_left == []
+        print(f"  ..   cleanup: {'done (rows and photo deleted)' if clean else f'left behind: rows={left} files={files_left}'}")
     print("Live check passed")
     return 0
 
