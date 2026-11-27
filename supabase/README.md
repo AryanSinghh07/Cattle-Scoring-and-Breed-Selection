@@ -3,7 +3,10 @@
 | Path | What it is |
 |---|---|
 | `migrations/20261127000000_initial_schema.sql` | Tables, security rules and the photo bucket |
+| `migrations/20261128000000_review_queue.sql` | `review_queue()` / `review_queue_size()`: consented analyses nobody has reviewed yet (reviewers/admins only) |
 | `tests/rls_check.sql` | Security self-check (leaves no data behind) |
+
+Migrations run **in file-name order**. Each one runs once.
 
 ## What the schema contains
 
@@ -35,6 +38,9 @@ own folder, and reviewers/admins can read photos (which exist only with consent)
 2. Paste the whole content of
    `migrations/20261127000000_initial_schema.sql` and click **Run**.
    Expected: *Success. No rows returned.*
+   Then do the same for each later migration, in order
+   (`20261128000000_review_queue.sql`). Already applied the first one? Run
+   only the new ones.
 3. **New query** again, paste `tests/rls_check.sql`, click **Run**.
    Expected result: **`All security checks passed`**.
    If a check fails, it stops with `FAIL: …`. The script rolls back, so
