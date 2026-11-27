@@ -169,7 +169,7 @@ Every pull request and every push to `main` runs the [CI workflow](.github/workf
 | ML | Python 3.12, installs `ml/requirements-train.txt`, runs the `ml/` test suite |
 | API | Python 3.12, installs `api/requirements.txt`, runs the `api/` test suite (stand-in models, fake Supabase) |
 
-A green ✓ on the pull request means both passed. The ML tools are described in [`ml/README.md`](ml/README.md), the API in [`api/README.md`](api/README.md).
+A green ✓ on the pull request means all checks passed. The ML tools are described in [`ml/README.md`](ml/README.md), the API in [`api/README.md`](api/README.md).
 
 ---
 
