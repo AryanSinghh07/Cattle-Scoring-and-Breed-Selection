@@ -1,0 +1,7 @@
+# Extra packages for training the breed classifier (Kaggle images already include most of these).
+-r requirements.txt
+timm>=1.0,<2
+scikit-learn>=1.5
+matplotlib>=3.9
+onnx>=1.17
+onnxscript>=0.1
