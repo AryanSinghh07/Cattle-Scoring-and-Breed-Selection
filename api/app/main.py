@@ -24,6 +24,7 @@ from .config import Settings, get_settings
 from .images import ImageError
 from .models import ModelRegistry, load_registry
 from .records import router as records_router
+from .review import router as review_router
 from .supabase import Supabase
 
 log = logging.getLogger("gopalan.api")
@@ -82,6 +83,7 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
 
     app.include_router(analysis_router)
     app.include_router(records_router)
+    app.include_router(review_router)
 
     @app.get("/health", tags=["system"])
     async def health(request: Request):

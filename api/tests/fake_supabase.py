@@ -20,7 +20,11 @@ from app.supabase import Supabase
 USERS = {
     "token-a": {"id": "00000000-0000-4000-8000-0000000000a1", "email": "a@example.test"},
     "token-b": {"id": "00000000-0000-4000-8000-0000000000b1", "email": "b@example.test"},
+    "token-r": {"id": "00000000-0000-4000-8000-0000000000c1", "email": "r@example.test"},
+    "token-r2": {"id": "00000000-0000-4000-8000-0000000000c2", "email": "r2@example.test"},
 }
+ROLES = {u["id"]: "farmer" for u in USERS.values()} | {
+    USERS["token-r"]["id"]: "reviewer", USERS["token-r2"]["id"]: "reviewer"}
 
 
 def _err(status: int, code: str, message: str) -> httpx.Response:
@@ -29,7 +33,8 @@ def _err(status: int, code: str, message: str) -> httpx.Response:
 
 class FakeSupabase:
     def __init__(self):
-        self.tables: dict[str, list[dict]] = {"animals": [], "analyses": []}
+        self.tables: dict[str, list[dict]] = {"animals": [], "analyses": [], "reviews": []}
+        self.roles = dict(ROLES)
         self.files: dict[str, bytes] = {}
         self._clock = itertools.count(1)
 
@@ -52,8 +57,34 @@ class FakeSupabase:
 
     # -- database ---------------------------------------------------------------------
 
+    def _staff(self, uid: str) -> bool:
+        return self.roles.get(uid) in ("reviewer", "admin")
+
     def _visible(self, table: str, uid: str) -> list[dict]:
+        if table == "profiles":
+            return [{"id": uid, "role": self.roles.get(uid, "farmer"), "created_at": 0}]
+        if table == "analyses":
+            return [r for r in self.tables[table]
+                    if r["owner_id"] == uid or (r.get("photo_consent") and self._staff(uid))]
+        if table == "reviews":
+            mine = {a["id"] for a in self.tables["analyses"] if a["owner_id"] == uid}
+            rows = [r for r in self.tables[table]
+                    if r["reviewer_id"] == uid or r["analysis_id"] in mine or self.roles.get(uid) == "admin"]
+            return [{**r, "analysis": next((a for a in self._visible("analyses", uid) if a["id"] == r["analysis_id"]), None)}
+                    for r in rows]
         return [r for r in self.tables[table] if r["owner_id"] == uid]
+
+    def _rpc(self, name: str, args: dict, uid: str) -> httpx.Response:
+        if not self._staff(uid):
+            return _err(403, "42501", "Only reviewers and admins can open the review queue")
+        reviewed = {r["analysis_id"] for r in self.tables["reviews"]}
+        waiting = [a for a in self.tables["analyses"] if a.get("photo_consent") and a["id"] not in reviewed]
+        waiting.sort(key=lambda a: (a.get("bcs_confidence") is not None, a.get("bcs_confidence") or 0, a["created_at"]))
+        if name == "review_queue":
+            return httpx.Response(200, json=waiting[: args.get("p_limit", 20)])
+        if name == "review_queue_size":
+            return httpx.Response(200, json=len(waiting))
+        return httpx.Response(404)
 
     @staticmethod
     def _filter(rows: list[dict], params) -> list[dict]:
@@ -69,8 +100,26 @@ class FakeSupabase:
 
     def _rest(self, request: httpx.Request, table: str, uid: str) -> httpx.Response:
         params = dict(request.url.params)
+        if table.startswith("rpc/"):
+            return self._rpc(table.removeprefix("rpc/"), json.loads(request.content or b"{}"), uid)
         if request.method == "GET":
             return httpx.Response(200, json=self._filter(self._visible(table, uid), params))
+        if request.method == "POST" and table == "reviews":
+            row = json.loads(request.content)
+            target = next((a for a in self.tables["analyses"] if a["id"] == row["analysis_id"]), None)
+            if not self._staff(uid) or target is None or not target.get("photo_consent"):
+                return _err(403, "42501", "new row violates row-level security policy")
+            if any(r["analysis_id"] == row["analysis_id"] and r["reviewer_id"] == uid for r in self.tables["reviews"]):
+                return _err(409, "23505", "duplicate key value")
+            row = {"id": str(uuid.uuid4()), **row, "reviewer_id": uid, "created_at": next(self._clock), "updated_at": None}
+            self.tables["reviews"].append(row)
+            return httpx.Response(201, json=[row])
+        if request.method == "PATCH" and table == "reviews":
+            rows = [r for r in self.tables["reviews"] if r["reviewer_id"] == uid and self._staff(uid)]
+            rows = self._filter(rows, params)
+            for r in rows:
+                r.update(json.loads(request.content), updated_at=next(self._clock))
+            return httpx.Response(200, json=rows)
         if request.method == "POST":
             row = json.loads(request.content)
             if row.get("owner_id", uid) != uid:
@@ -98,7 +147,7 @@ class FakeSupabase:
     def _storage(self, request: httpx.Request, rest: str, uid: str) -> httpx.Response:
         if rest.startswith("sign/"):
             path = rest.removeprefix("sign/").split("/", 1)[1]
-            if not path.startswith(uid + "/") or path not in self.files:
+            if not (path.startswith(uid + "/") or self._staff(uid)) or path not in self.files:
                 return httpx.Response(400, json={"statusCode": "404", "error": "not_found", "message": "Object not found"})
             return httpx.Response(200, json={"signedURL": f"/object/sign/animal-photos/{path}?token=t"})
         bucket, _, path = rest.partition("/")
