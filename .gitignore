@@ -25,3 +25,19 @@ originals-backup
 *.njsproj
 *.sln
 *.sw?
+
+# Python / ML: keep datasets, model weights and environments out of git
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+/data/
+ml/data/
+ml/outputs/
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.ckpt
