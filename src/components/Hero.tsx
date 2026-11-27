@@ -42,8 +42,10 @@ const Hero = () => {
   }, []);
 
   useEffect(() => {
+    // Copy the ref value so the cleanup uses the same array the effect saw.
+    const videos = videoRefs.current;
     return () => {
-      videoRefs.current.forEach((video) => video?.pause());
+      videos.forEach((video) => video?.pause());
     };
   }, []);
 
