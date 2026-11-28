@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeftIcon } from "@/components/icons";
+import { Narrow } from "@/components/narrow";
 import { getDictionary, hasLocale, locales } from "@/i18n";
 
 /**
@@ -30,7 +31,8 @@ export default async function ComingSoon({ params }: PageProps<"/[lang]/[section
   const s = SECTIONS[section as Section];
 
   return (
-    <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
+    <Narrow>
+    <section className="flex flex-col gap-3 rounded-card bg-surface p-5 md:p-8">
       <span className="self-start rounded-full bg-soil-soft px-3 py-0.5 text-[13px] font-bold text-soil">{t.common.comingSoon}</span>
       <h1 className="text-2xl font-extrabold">{s[lang]}</h1>
       <p className="text-base text-muted">{t.common.comingSoonText}</p>
@@ -39,5 +41,6 @@ export default async function ComingSoon({ params }: PageProps<"/[lang]/[section
         {t.common.backHome}
       </Link>
     </section>
+    </Narrow>
   );
 }
