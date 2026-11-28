@@ -50,7 +50,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
     <html lang={lang} className={`${mukta.variable} h-full antialiased`}>
       <body className="flex min-h-dvh flex-col">
         <SessionProvider>
-          <header className="sticky top-0 z-20 border-b border-transparent bg-ground/90 backdrop-blur md:border-line">
+          <header className="sticky top-0 z-20 print:hidden border-b border-transparent bg-ground/90 backdrop-blur md:border-line">
             <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-8">
               <Link href={`/${lang}`} className="flex items-center gap-2.5 text-ink no-underline">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest text-ground">
@@ -69,7 +69,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
           <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 pb-5 pt-1 md:px-8 md:pt-8">{children}</main>
 
           <SiteFooter lang={lang} t={t} />
-          <div className="md:hidden">
+          <div className="md:hidden print:hidden">
             <BottomNav lang={lang} labels={t.nav} />
           </div>
         </SessionProvider>

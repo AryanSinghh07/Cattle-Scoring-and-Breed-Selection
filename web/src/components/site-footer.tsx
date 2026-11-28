@@ -7,7 +7,7 @@ export function SiteFooter({ lang, t }: { lang: string; t: Dictionary }) {
   const col = "flex flex-col gap-2";
   const link = "text-[15px] text-ground/85 no-underline hover:text-white";
   return (
-    <footer className="mt-12 hidden bg-forest-dark text-ground md:block">
+    <footer className="mt-12 hidden bg-forest-dark text-ground md:block print:hidden">
       <div className="mx-auto grid max-w-6xl grid-cols-[2fr_1fr_1fr] gap-10 px-8 py-12">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2.5">
