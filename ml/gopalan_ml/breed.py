@@ -69,15 +69,34 @@ class BreedClassifier:
         self.session = session
         self.input_name = session.get_inputs()[0].name
 
-    def predict(self, image_rgb: np.ndarray, box: tuple[float, float, float, float] | None = None, top_k: int = 3) -> dict:
-        """Breed prediction for an RGB image. ``box`` (x1, y1, x2, y2) crops to the animal first."""
+    def probabilities(self, image_rgb: np.ndarray, box: tuple[float, float, float, float] | None = None) -> np.ndarray:
+        """Probability per class (order of ``self.classes``). ``box`` (x1, y1, x2, y2) crops to the animal first."""
         if box is not None:
             x1, y1, x2, y2 = (int(round(v)) for v in box)
             h, w = image_rgb.shape[:2]
             mx, my = int(0.1 * (x2 - x1)), int(0.1 * (y2 - y1))
             image_rgb = image_rgb[max(0, y1 - my) : min(h, y2 + my), max(0, x1 - mx) : min(w, x2 + mx)]
         logits = self.session.run(None, {self.input_name: preprocess(image_rgb, self.labels)})[0]
-        probs = softmax(np.asarray(logits, dtype=np.float64))[0]
+        return softmax(np.asarray(logits, dtype=np.float64))[0]
+
+    def restrict(self, probs: np.ndarray, species: str | None) -> np.ndarray:
+        """Keep only the breeds of ``species`` ("cow" or "buffalo") and renormalise."""
+        if species not in ("cow", "buffalo"):
+            return probs
+        mask = np.array([BREEDS.get(c, (c, None))[1] == species for c in self.classes], dtype=np.float64)
+        kept = probs * mask
+        total = kept.sum()
+        return kept / total if total > 0 else probs
+
+    def predict(self, image_rgb: np.ndarray, box: tuple[float, float, float, float] | None = None, top_k: int = 3,
+                species: str | None = None) -> dict:
+        """Breed prediction for an RGB image.
+
+        ``box`` crops to the animal first. ``species`` ("cow"/"buffalo", as told by
+        the user) limits the answer to that species' breeds, so a cow can't be
+        labelled with a buffalo breed.
+        """
+        probs = self.restrict(self.probabilities(image_rgb, box), species)
         order = np.argsort(-probs)[:top_k]
         top = [self._entry(self.classes[i], float(probs[i])) for i in order]
         best = top[0]
@@ -89,6 +108,7 @@ class BreedClassifier:
             "confidence": round(best["confidence"], 3),
             "unsure": unsure,
             "threshold": self.threshold,
+            "species": species if species in ("cow", "buffalo") else None,
             "top": top,
         }
 

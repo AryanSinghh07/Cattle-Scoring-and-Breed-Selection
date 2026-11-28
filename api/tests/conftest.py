@@ -16,7 +16,7 @@ class StubBreed:
     threshold = 0.45
     labels = {"model_name": "stub"}
 
-    def predict(self, image, box=None, top_k=3):
+    def predict(self, image, box=None, top_k=3, species=None):
         return {"breed": "gir", "confidence": 0.9, "unsure": False, "top": []}
 
 

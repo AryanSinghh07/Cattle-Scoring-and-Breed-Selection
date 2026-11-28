@@ -62,6 +62,24 @@ def test_low_confidence_is_unsure_with_suggestions(tmp_path):
     assert [t["slug"] for t in r["top"][:2]] == ["murrah", "surti"]
 
 
+def test_species_filter_keeps_only_that_species(tmp_path):
+    logits = [0.0] * 16
+    logits[CLASSES.index("nagpuri")] = 3.0     # buffalo, highest overall
+    logits[CLASSES.index("red-sindhi")] = 2.0  # cow
+    logits[CLASSES.index("sahiwal")] = 1.0     # cow
+    clf = classifier(tmp_path, logits)
+    img = np.zeros((100, 120, 3), np.uint8)
+
+    assert clf.predict(img)["top"][0]["slug"] == "nagpuri"
+    r = clf.predict(img, species="cow")
+    assert r["species"] == "cow"
+    assert [t["slug"] for t in r["top"][:2]] == ["red-sindhi", "sahiwal"]
+    assert all(t["type"] == "cow" for t in r["top"])
+    assert abs(sum(clf.restrict(clf.probabilities(img), "cow")) - 1.0) < 1e-9
+    assert clf.predict(img, species="buffalo")["top"][0]["slug"] == "nagpuri"
+    assert clf.predict(img, species="goat")["species"] is None  # unknown values are ignored
+
+
 def test_box_crops_before_classifying(tmp_path):
     clf = classifier(tmp_path, [0.0] * 16)
     img = np.zeros((400, 400, 3), np.uint8)

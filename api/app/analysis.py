@@ -33,6 +33,9 @@ def analyze(
     back: UploadFile | None = File(None, description="Back-view photo (optional)"),
     marker_cm: float = Form(20.0, gt=1, le=200, description="Side length of the printed ArUco marker in cm"),
     facing: Literal["auto", "left", "right"] = Form("auto", description="Which way the animal faces in the side photo"),
+    species: Literal["cow", "buffalo"] | None = Form(
+        None, description="Cow or buffalo, as told by the user: breed is chosen only among that species' breeds"
+    ),
 ):
     """Finds the animal, places body points, reads the marker, measures, scores
     BCS (beta) and predicts the breed. Problems with the photos (no animal, no
@@ -54,7 +57,7 @@ def analyze(
         result["warnings"].append("Breed not predicted: no animal found in the side photo.")
     else:
         box = animal["box"] if settings.breed_crop_to_animal else None
-        breed = reg.breed.predict(side_img, box=box)
+        breed = reg.breed.predict(side_img, box=box, species=species)
 
     analysis_id, expires = None, 0
     if result["views"]["side"].get("points"):

@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     # If the files above don't exist, download them from this public Hugging Face model repo.
     breed_model_repo: str | None = None
     breed_model_revision: str | None = None  # branch, tag or commit; None = latest
-    breed_crop_to_animal: bool = True  # classify the detected animal, not the whole photo
+    # Classify the whole photo: on the 508 test photos it beat cropping to the
+    # detected animal (72.0% vs 70.1% exact, 90.4% vs 86.6% top-3); see issue #28.
+    breed_crop_to_animal: bool = False
 
     # Supabase (saving). Only the URL and the *publishable* key are needed:
     # requests run with each user's own token, so database security rules apply.
