@@ -16,7 +16,8 @@
     "home": "Home",
     "analyze": "Analyze",
     "reminders": "Reminders",
-    "help": "Help"
+    "help": "Help",
+    "breeds": "Breed guide"
   },
   "home": {
     "heroAlt": "Cattle standing in a field",
@@ -30,7 +31,43 @@
     "printMarker": "Print the marker",
     "signInTitle": "Keep your animals' history",
     "signInText": "Sign in to save results, track body condition over time and get reminders.",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "eyebrow": "For farmers and the Rashtriya Gokul Mission",
+    "heroTitleDesktop": "Know your animal's health from one photo",
+    "heroLead": "Gopalan AI measures your cow or buffalo, scores its body condition and recognises the breed. Then it helps you plan feeding and reminds you what's due.",
+    "howItWorksCta": "How it works",
+    "trust1": "Free to try",
+    "trust2": "No account needed",
+    "trust3": "English & हिन्दी",
+    "exampleLabel": "Example result",
+    "exampleBcs": "Body condition",
+    "exampleIdeal": "Ideal",
+    "exampleBreed": "Breed",
+    "howTitle": "How it works",
+    "howText": "Three steps, about a minute.",
+    "step1Title": "Take a side photo",
+    "step1Text": "Stand beside the animal with the printed 20 cm marker next to it.",
+    "step2Title": "Check the points",
+    "step2Text": "The AI places the body points. Drag any orange point that's off.",
+    "step3Title": "Get the result",
+    "step3Text": "Body condition score, breed, measurements and what to do next.",
+    "featuresTitle": "What you get",
+    "comingSoon": "Coming soon",
+    "f1Title": "Body condition score",
+    "f1Text": "A consistent 1–5 score in 0.25 steps, explained in plain words.",
+    "f2Title": "Breed recognition",
+    "f2Text": "16 Indian cattle and buffalo breeds, or an honest \"not sure\".",
+    "f3Title": "Feeding plan",
+    "f3Text": "The lowest-cost mix of the feeds you have that meets your animal's needs.",
+    "f4Title": "Reminders",
+    "f4Text": "Feeding, vaccination, deworming, breeding dates and check-ups.",
+    "guidesTitle": "Guides & help",
+    "bannerTitle": "Keep every animal's history in one place",
+    "bannerText": "Sign in to save results, watch body condition change over time and get reminders on your phone.",
+    "bannerCta": "Create a free account",
+    "exampleThin": "Thin",
+    "examplePoints": "8 body points placed by the AI",
+    "exampleAlt": "A Red Sindhi cow with the body points placed by the AI"
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -70,5 +107,12 @@
       "reviewer": "Reviewer",
       "admin": "Admin"
     }
+  },
+  "footer": {
+    "tagline": "Body condition, breed, feeding and reminders for cattle and buffalo.",
+    "app": "App",
+    "learn": "Learn",
+    "note": "Version 3 is being built. Some sections are coming soon.",
+    "rights": "© 2026 Aryan Singh · MIT licence"
   }
 }

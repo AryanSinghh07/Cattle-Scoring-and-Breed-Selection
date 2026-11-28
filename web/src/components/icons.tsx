@@ -51,3 +51,18 @@ export const MarkerIcon = (p: IconProps) => (
 export const ArrowLeftIcon = (p: IconProps) => (
   <Svg {...p}><path d="M15 5l-7 7 7 7" /></Svg>
 );
+export const ArrowRightIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M5 12h14M13 6l6 6-6 6" /></Svg>
+);
+export const CheckIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M5 12l5 5 9-10" /></Svg>
+);
+export const GaugeIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M4 16a8 8 0 1 1 16 0" /><path d="M12 16l4-5" /><path d="M4 16h2M18 16h2M12 8V6" /></Svg>
+);
+export const CowIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M5 10c0-3 3-5 7-5s7 2 7 5v5H5z" /><path d="M7 15v4M17 15v4M4 6l2 3M20 6l-2 3" /></Svg>
+);
+export const PointsIcon = (p: IconProps) => (
+  <Svg {...p}><circle cx="6" cy="7" r="2" /><circle cx="18" cy="9" r="2" /><circle cx="9" cy="17" r="2" /><path d="M8 8l8 1M7 9l2 6" /></Svg>
+);

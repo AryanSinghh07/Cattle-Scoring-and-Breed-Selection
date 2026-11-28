@@ -5,8 +5,10 @@ import { notFound } from "next/navigation";
 import "../globals.css";
 import { AccountButton } from "@/components/account-button";
 import { BottomNav } from "@/components/bottom-nav";
+import { DesktopNav } from "@/components/desktop-nav";
 import { LeafIcon } from "@/components/icons";
 import { LanguageSwitch } from "@/components/language-switch";
+import { SiteFooter } from "@/components/site-footer";
 import { getDictionary, hasLocale, locales } from "@/i18n";
 import { SessionProvider } from "@/lib/session";
 
@@ -48,22 +50,28 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
     <html lang={lang} className={`${mukta.variable} h-full antialiased`}>
       <body className="flex min-h-dvh flex-col">
         <SessionProvider>
-        <div className="mx-auto flex w-full max-w-xl flex-1 flex-col">
-          <header className="flex items-center justify-between px-4 py-3.5">
-            <Link href={`/${lang}`} className="flex items-center gap-2.5 text-ink no-underline">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest text-ground">
-                <LeafIcon />
-              </span>
-              <span className="text-xl font-extrabold tracking-tight">{t.common.appName}</span>
-            </Link>
-            <div className="flex items-center gap-2">
-              <LanguageSwitch current={lang} label={t.common.language} />
-              <AccountButton lang={lang} labels={{ account: t.auth.account, signIn: t.auth.signInTitle }} />
+          <header className="sticky top-0 z-20 border-b border-transparent bg-ground/90 backdrop-blur md:border-line">
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-8">
+              <Link href={`/${lang}`} className="flex items-center gap-2.5 text-ink no-underline">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest text-ground">
+                  <LeafIcon />
+                </span>
+                <span className="text-xl font-extrabold tracking-tight">{t.common.appName}</span>
+              </Link>
+              <DesktopNav lang={lang} labels={t.nav} />
+              <div className="flex items-center gap-2">
+                <LanguageSwitch current={lang} label={t.common.language} />
+                <AccountButton lang={lang} labels={{ account: t.auth.account, signIn: t.auth.signInTitle }} />
+              </div>
             </div>
           </header>
-          <main className="flex flex-1 flex-col gap-4 px-4 pb-5">{children}</main>
-          <BottomNav lang={lang} labels={t.nav} />
-        </div>
+
+          <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 pb-5 pt-1 md:px-8 md:pt-8">{children}</main>
+
+          <SiteFooter lang={lang} t={t} />
+          <div className="md:hidden">
+            <BottomNav lang={lang} labels={t.nav} />
+          </div>
         </SessionProvider>
       </body>
     </html>
