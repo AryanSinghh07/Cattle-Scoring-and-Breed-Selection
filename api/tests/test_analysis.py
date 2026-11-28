@@ -54,9 +54,11 @@ class FakeDetector:
 class FakeBreed:
     def __init__(self):
         self.boxes = []
+        self.species = []
 
-    def predict(self, image, box=None, top_k=3):
+    def predict(self, image, box=None, top_k=3, species=None):
         self.boxes.append(box)
+        self.species.append(species)
         return {"breed": "gir", "name": "Gir", "type": "cow", "confidence": 0.88, "unsure": False, "top": []}
 
 
@@ -92,6 +94,14 @@ def test_analyze_full_result(api, breed):
     assert breed.boxes[0] is not None  # classified the detected animal
     assert body["analysis_id"] and body["expires_in_seconds"] == 1800
     assert body["models"]["detector"]["loaded"] is True
+
+
+def test_analyze_passes_species_to_breed_model(api, breed):
+    files = {"side": ("s.png", side_photo_bytes(), "image/png")}
+    assert api.post("/analyze", files=files, data={"species": "buffalo"}).status_code == 200
+    assert api.post("/analyze", files=files).status_code == 200
+    assert breed.species == ["buffalo", None]
+    assert api.post("/analyze", files=files, data={"species": "goat"}).status_code == 422
 
 
 def test_analyze_without_marker_and_without_animal(settings):
