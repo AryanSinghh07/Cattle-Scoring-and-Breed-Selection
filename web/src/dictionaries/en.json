@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "title": "Gopalan AI · Cattle scoring & breed",
+    "description": "Check your cattle or buffalo's body condition and breed from a photo, plan feeding and get reminders."
+  },
+  "common": {
+    "appName": "Gopalan AI",
+    "language": "Language",
+    "comingSoon": "Coming soon",
+    "comingSoonText": "This part of the new app is being built.",
+    "backHome": "Back to home",
+    "beta": "Beta"
+  },
+  "nav": {
+    "main": "Main",
+    "home": "Home",
+    "analyze": "Analyze",
+    "reminders": "Reminders",
+    "help": "Help"
+  },
+  "home": {
+    "heroAlt": "Cattle standing in a field",
+    "heroTitle": "Check your animal's health from a photo",
+    "heroText": "Body condition, breed and a feeding plan in about a minute.",
+    "cta": "Analyze my animal",
+    "quickLinks": "Quick links",
+    "breedGuide": "Breed guide",
+    "healthHelp": "Health help",
+    "photoGuide": "Photo guide",
+    "printMarker": "Print the marker",
+    "signInTitle": "Keep your animals' history",
+    "signInText": "Sign in to save results, track body condition over time and get reminders.",
+    "signIn": "Sign in"
+  }
+}
