@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   // ml/.venv and ml/outputs hold Python packages and downloaded files, not site code.
-  { ignores: ["dist", "ml/.venv", "ml/outputs"] },
+  { ignores: ["dist", "ml/.venv", "ml/outputs", "web"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
