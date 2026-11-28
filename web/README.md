@@ -56,4 +56,28 @@ src/
 ## Settings
 
 `web/.env.local` (from [`.env.example`](.env.example)). Only **public** values
-(`NEXT_PUBLIC_…`): API URL, Supabase URL, Supabase publishable key.
+(`NEXT_PUBLIC_…`): API URL, Supabase URL, Supabase publishable key. They are
+built into the app, so rebuild after changing them.
+
+## Sign-in and talking to the API
+
+- **Sign-in** uses Supabase Auth in the browser ([`src/lib/supabase.ts`](src/lib/supabase.ts)):
+  email + password, sign up with name, sign out. The session stays on the
+  device and refreshes itself. [`src/lib/session.tsx`](src/lib/session.tsx)
+  provides `useSession()` to every page.
+- **Account** page (`/[lang]/account`): name, phone, app language (saved to the
+  `profiles` table; the database refuses role changes) and sign out.
+- **API client** ([`src/lib/api.ts`](src/lib/api.ts)): typed functions for
+  every v2 API endpoint (`analyze`, `recompute`, animals, history, saving).
+  Calls that need an account send the user's access token automatically;
+  trying an analysis needs none. Errors come back as `ApiError` with a status,
+  a code and a readable message.
+- **Email confirmation:** Supabase sends a confirmation email on sign-up
+  (Authentication → Sign In / Providers → Email). The link returns to
+  `/[lang]/sign-in`. Supabase's built-in email sender allows only a few emails
+  per hour; set up custom SMTP in Supabase before launch.
+- **Phone sign-in (OTP)** needs an SMS provider configured in Supabase
+  (Authentication → Sign In / Providers → Phone). The screen says "coming soon"
+  until then.
+- The API must allow the website's origin: `http://localhost:3000` is in the
+  API's defaults; add the live domain via `GOPALAN_ALLOWED_ORIGINS` at launch.

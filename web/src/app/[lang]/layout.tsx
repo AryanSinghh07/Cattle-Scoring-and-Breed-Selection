@@ -3,10 +3,12 @@ import { Mukta } from "next/font/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import "../globals.css";
+import { AccountButton } from "@/components/account-button";
 import { BottomNav } from "@/components/bottom-nav";
 import { LeafIcon } from "@/components/icons";
 import { LanguageSwitch } from "@/components/language-switch";
 import { getDictionary, hasLocale, locales } from "@/i18n";
+import { SessionProvider } from "@/lib/session";
 
 const mukta = Mukta({
   subsets: ["latin", "devanagari"],
@@ -45,6 +47,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   return (
     <html lang={lang} className={`${mukta.variable} h-full antialiased`}>
       <body className="flex min-h-dvh flex-col">
+        <SessionProvider>
         <div className="mx-auto flex w-full max-w-xl flex-1 flex-col">
           <header className="flex items-center justify-between px-4 py-3.5">
             <Link href={`/${lang}`} className="flex items-center gap-2.5 text-ink no-underline">
@@ -53,11 +56,15 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
               </span>
               <span className="text-xl font-extrabold tracking-tight">{t.common.appName}</span>
             </Link>
-            <LanguageSwitch current={lang} label={t.common.language} />
+            <div className="flex items-center gap-2">
+              <LanguageSwitch current={lang} label={t.common.language} />
+              <AccountButton lang={lang} labels={{ account: t.auth.account, signIn: t.auth.signInTitle }} />
+            </div>
           </header>
           <main className="flex flex-1 flex-col gap-4 px-4 pb-5">{children}</main>
           <BottomNav lang={lang} labels={t.nav} />
         </div>
+        </SessionProvider>
       </body>
     </html>
   );

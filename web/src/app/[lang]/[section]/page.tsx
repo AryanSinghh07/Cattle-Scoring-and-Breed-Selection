@@ -11,7 +11,6 @@ const SECTIONS = {
   analyze: { en: "Analyze", hi: "जाँच", issue: 31 },
   reminders: { en: "Reminders", hi: "रिमाइंडर", issue: 34 },
   help: { en: "Help & support", hi: "मदद और सहायता", issue: 35 },
-  "sign-in": { en: "Sign in", hi: "साइन इन", issue: 30 },
   breeds: { en: "Breed guide", hi: "नस्ल गाइड", issue: 37 },
   health: { en: "Health help", hi: "स्वास्थ्य सहायता", issue: 37 },
   guide: { en: "Photo guide", hi: "फ़ोटो गाइड", issue: 37 },
@@ -31,7 +30,7 @@ export default async function ComingSoon({ params }: PageProps<"/[lang]/[section
   const s = SECTIONS[section as Section];
 
   return (
-    <section className="flex flex-col gap-3 rounded-[var(--radius-card)] bg-surface p-5">
+    <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
       <span className="self-start rounded-full bg-soil-soft px-3 py-0.5 text-[13px] font-bold text-soil">{t.common.comingSoon}</span>
       <h1 className="text-2xl font-extrabold">{s[lang]}</h1>
       <p className="text-base text-muted">{t.common.comingSoonText}</p>
