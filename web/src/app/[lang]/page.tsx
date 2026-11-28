@@ -19,14 +19,14 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
 
   return (
     <>
-      <section className="overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-[0_1px_2px_rgba(30,42,30,0.08)]">
+      <section className="overflow-hidden rounded-card bg-surface shadow-[0_1px_2px_rgba(30,42,30,0.08)]">
         <Image src={hero} alt={t.heroAlt} priority placeholder="blur" className="h-44 w-full object-cover" sizes="(max-width: 576px) 100vw, 576px" />
         <div className="flex flex-col gap-2.5 p-4 pt-4 sm:p-5">
           <h1 className="text-[26px] font-extrabold leading-tight">{t.heroTitle}</h1>
           <p className="text-base leading-snug text-muted">{t.heroText}</p>
           <Link
             href={`/${lang}/analyze`}
-            className="mt-1 flex min-h-14 items-center justify-center gap-2.5 rounded-[var(--radius-control)] bg-forest text-lg font-bold text-white no-underline hover:bg-forest-dark"
+            className="mt-1 flex min-h-14 items-center justify-center gap-2.5 rounded-control bg-forest text-lg font-bold text-white no-underline hover:bg-forest-dark"
           >
             <CameraIcon size={22} />
             {t.cta}
@@ -34,12 +34,12 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         </div>
       </section>
 
-      <section className="flex flex-col gap-2 rounded-[var(--radius-card)] bg-surface p-4">
+      <section className="flex flex-col gap-2 rounded-card bg-surface p-4">
         <h2 className="text-[19px] font-bold">{t.signInTitle}</h2>
         <p className="text-[15px] leading-snug text-muted">{t.signInText}</p>
         <Link
           href={`/${lang}/sign-in`}
-          className="flex min-h-12 items-center justify-center rounded-[var(--radius-control)] border-2 border-forest text-base font-bold text-forest no-underline"
+          className="flex min-h-12 items-center justify-center rounded-control border-2 border-forest text-base font-bold text-forest no-underline"
         >
           {t.signIn}
         </Link>
