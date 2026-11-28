@@ -91,7 +91,7 @@ def test_analyze_full_result(api, breed):
     assert abs(body["measurements"]["body_length_cm"] - 120) < 6
     assert 1.0 <= body["bcs"]["score"] <= 5.0 and body["bcs"]["beta"] is True
     assert body["breed"]["breed"] == "gir"
-    assert breed.boxes[0] is not None  # classified the detected animal
+    assert breed.boxes[0] is None  # whole photo by default (better on the test set, #28)
     assert body["analysis_id"] and body["expires_in_seconds"] == 1800
     assert body["models"]["detector"]["loaded"] is True
 
