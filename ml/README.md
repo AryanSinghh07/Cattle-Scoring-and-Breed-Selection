@@ -144,6 +144,24 @@ breeds are the ones with the most label noise in the source data (see
 [DATASETS.md](DATASETS.md)). Cleaner buffalo photos are the most effective
 way to improve the model.
 
+**Whole photo vs. crop, and the cow/buffalo choice** (issue #28,
+`scripts/eval_breed_options.py`, same 508 test photos, real detector boxes,
+threshold 0.45):
+
+| Option | Exact | Top-3 | Answers | Correct when answering | Cow ↔ buffalo mix-ups |
+|---|---|---|---|---|---|
+| **Whole photo** (default) | 72.0% | 90.4% | 79% | 81.5% | 2.4% |
+| Cropped to the animal | 70.1% | 86.6% | 76% | 79.4% | 3.7% |
+| **Whole photo + user's cow/buffalo choice** | **72.6%** | **91.5%** | 87% | 78.8% | **0%** |
+| Cropped + cow/buffalo choice | 71.7% | 88.0% | 84% | 78.9% | 0% |
+
+The model was trained on whole photos, so cropping hurts. Limiting the answer
+to the species the user picked removes every cow ↔ buffalo mix-up; it answers
+more often at the same threshold, at slightly lower precision. The API
+therefore classifies the whole photo and accepts `species=cow|buffalo`.
+(18 test photos had no animal detected; for those the whole photo is used
+either way.)
+
 These are web photos. Accuracy on real farm photos taken with the app has
 not been measured yet.
 

@@ -127,8 +127,14 @@ Response (shortened):
 Problems with the photos (no animal, no marker, unclear direction) come back
 as `warnings` with HTTP 200 so the app can guide the user. Bad files return
 `413`/`415`, and `503` means the models aren't loaded yet. Breed is predicted
-on the detected animal (cropped with a 10% margin); below the model's
-threshold it is `"unsure"` with the top guesses.
+on the whole photo (better than cropping to the animal on the test set). Send
+`species=cow` or `species=buffalo` (the user's choice) to pick only among that
+species' 8 breeds; this removes cow ↔ buffalo mix-ups. Below the model's
+threshold the breed is `"unsure"` with the top guesses.
+
+| Field | Required | Meaning |
+|---|---|---|
+| `species` | no | `cow` or `buffalo`, as told by the user |
 
 ### `POST /recompute`
 
@@ -211,7 +217,7 @@ in `api/.env`). See [`.env.example`](.env.example).
 | `GOPALAN_BREED_LABELS_PATH` | `models/labels.json` | Breed labels and threshold |
 | `GOPALAN_BREED_MODEL_REPO` | (empty) | Hugging Face model repo to download the breed model from when the files above don't exist |
 | `GOPALAN_BREED_MODEL_REVISION` | (latest) | Branch, tag or commit of that repo |
-| `GOPALAN_BREED_CROP_TO_ANIMAL` | `true` | Classify the detected animal rather than the whole photo |
+| `GOPALAN_BREED_CROP_TO_ANIMAL` | `false` | Classify the detected animal instead of the whole photo (whole photo tested better) |
 | `GOPALAN_SUPABASE_URL` | (empty) | Supabase project URL; saving is off without it |
 | `GOPALAN_SUPABASE_PUBLISHABLE_KEY` | (empty) | Publishable (anon) key, never the secret key |
 | `GOPALAN_PHOTO_BUCKET` | `animal-photos` | Storage bucket for consented photos |
