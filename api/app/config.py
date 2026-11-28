@@ -17,7 +17,8 @@ class Settings(BaseSettings):
 
     # Website origins allowed to call the API from a browser.
     allowed_origins: list[str] = Field(
-        default=["http://localhost:8080", "http://localhost:5173", "https://gopalanai.netlify.app"]
+        default=["http://localhost:3000", "http://localhost:8080", "http://localhost:5173",
+                 "https://gopalanai.netlify.app"]
     )
     # Netlify deploy previews (deploy-preview-<n>--gopalanai.netlify.app).
     allowed_origin_regex: str = r"https://deploy-preview-\d+--gopalanai\.netlify\.app"
