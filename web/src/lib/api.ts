@@ -53,6 +53,7 @@ export type Breed = {
   confidence: number;
   unsure: boolean;
   threshold: number;
+  species: "cow" | "buffalo" | null;
   top: BreedGuess[];
 };
 
@@ -157,11 +158,15 @@ const json = (data: unknown): RequestInit => ({
 export const api = {
   health: () => request<{ status: string; version: string; models: Record<string, unknown> }>("/health"),
 
-  analyze(photos: Partial<Record<View, Blob>>, opts: { markerCm?: number; facing?: "auto" | "left" | "right" } = {}) {
+  analyze(
+    photos: Partial<Record<View, Blob>>,
+    opts: { markerCm?: number; facing?: "auto" | "left" | "right"; species?: "cow" | "buffalo" } = {},
+  ) {
     const form = new FormData();
     for (const [view, blob] of Object.entries(photos)) if (blob) form.append(view, blob, `${view}.jpg`);
     form.append("marker_cm", String(opts.markerCm ?? 20));
     form.append("facing", opts.facing ?? "auto");
+    if (opts.species) form.append("species", opts.species);
     return request<AnalyzeResponse>("/analyze", { method: "POST", body: form });
   },
 
