@@ -9,13 +9,11 @@ import { getDictionary, hasLocale, locales } from "@/i18n";
  * Each section is replaced by its own route as it is implemented.
  */
 const SECTIONS = {
-  analyze: { en: "Analyze", hi: "जाँच", issue: 31 },
   reminders: { en: "Reminders", hi: "रिमाइंडर", issue: 34 },
   help: { en: "Help & support", hi: "मदद और सहायता", issue: 35 },
   breeds: { en: "Breed guide", hi: "नस्ल गाइड", issue: 37 },
   health: { en: "Health help", hi: "स्वास्थ्य सहायता", issue: 37 },
   guide: { en: "Photo guide", hi: "फ़ोटो गाइड", issue: 37 },
-  marker: { en: "Print the marker", hi: "मार्कर प्रिंट करें", issue: 31 },
 } as const;
 
 type Section = keyof typeof SECTIONS;
